@@ -16,14 +16,14 @@
 package org.redisson.spring.starter;
 
 import org.redisson.misc.RedisURI;
-import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisConnectionDetails;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Adapts {@link RedisProperties} to {@link RedisConnectionDetails}.
+ * Adapts {@link DataRedisProperties} to {@link DataRedisConnectionDetails}.
  *
  * @author Moritz Halbritter
  * @author Andy Wilkinson
@@ -31,11 +31,11 @@ import java.util.stream.Collectors;
  * @author Scott Frederick
  * @author Nikita Koksharov
  */
-public class PropertiesRedisConnectionDetails implements RedisConnectionDetails {
+public class PropertiesRedisConnectionDetails implements DataRedisConnectionDetails {
 
-    private final RedisProperties properties;
+    private final DataRedisProperties properties;
 
-    PropertiesRedisConnectionDetails(RedisProperties properties) {
+    PropertiesRedisConnectionDetails(DataRedisProperties properties) {
         this.properties = properties;
     }
 
@@ -61,10 +61,39 @@ public class PropertiesRedisConnectionDetails implements RedisConnectionDetails 
     public Standalone getStandalone() {
         if (this.properties.getUrl() != null) {
             RedisURI uri = parseURL();
-            return Standalone.of(uri.getHost(), uri.getPort(),
-                    this.properties.getDatabase());
+            return new Standalone() {
+                @Override
+                public String getHost() {
+                    return uri.getHost();
+                }
+
+                @Override
+                public int getPort() {
+                    return uri.getPort();
+                }
+
+                @Override
+                public int getDatabase() {
+                    return PropertiesRedisConnectionDetails.this.properties.getDatabase();
+                }
+            };
         }
-        return Standalone.of(this.properties.getHost(), this.properties.getPort(), this.properties.getDatabase());
+        return new Standalone() {
+            @Override
+            public String getHost() {
+                return PropertiesRedisConnectionDetails.this.properties.getHost();
+            }
+
+            @Override
+            public int getPort() {
+                return PropertiesRedisConnectionDetails.this.properties.getPort();
+            }
+
+            @Override
+            public int getDatabase() {
+                return PropertiesRedisConnectionDetails.this.properties.getDatabase();
+            }
+        };
     }
 
     private RedisURI parseURL() {
@@ -76,7 +105,7 @@ public class PropertiesRedisConnectionDetails implements RedisConnectionDetails 
 
     @Override
     public Sentinel getSentinel() {
-        RedisProperties.Sentinel sentinel = this.properties
+        DataRedisProperties.Sentinel sentinel = this.properties
                 .getSentinel();
         if (sentinel == null) {
             return null;
@@ -95,7 +124,7 @@ public class PropertiesRedisConnectionDetails implements RedisConnectionDetails 
 
             @Override
             public List<Node> getNodes() {
-                return sentinel.getNodes().stream().map(PropertiesRedisConnectionDetails.this::asNode).collect(Collectors.toList());
+                return sentinel.getNodes().stream().map(PropertiesRedisConnectionDetails.this::asRedisNode).collect(Collectors.toList());
             }
 
             @Override
@@ -113,16 +142,16 @@ public class PropertiesRedisConnectionDetails implements RedisConnectionDetails 
 
     @Override
     public Cluster getCluster() {
-        RedisProperties.Cluster cluster = this.properties.getCluster();
+        DataRedisProperties.Cluster cluster = this.properties.getCluster();
         if (cluster != null) {
             return () -> cluster.getNodes().stream()
-                                           .map(this::asNode)
+                                           .map(this::asRedisNode)
                                            .collect(Collectors.toList());
         }
         return null;
     }
 
-    private Node asNode(String node) {
+    private Node asRedisNode(String node) {
         String[] components = node.split(":");
         return new Node(components[0], Integer.parseInt(components[1]));
     }

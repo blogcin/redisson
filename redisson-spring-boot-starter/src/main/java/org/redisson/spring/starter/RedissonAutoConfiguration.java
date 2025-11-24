@@ -28,10 +28,10 @@ import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties.Sentinel;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisConnectionDetails;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties.Sentinel;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.ssl.SslBundles;
@@ -66,8 +66,8 @@ import java.util.List;
 @Configuration
 @ConditionalOnClass({Redisson.class, RedisOperations.class})
 @ConditionalOnMissingClass("org.springframework.boot.autoconfigure.AutoConfiguration")
-@AutoConfigureBefore(RedisAutoConfiguration.class)
-@EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
+@AutoConfigureBefore(DataRedisAutoConfiguration.class)
+@EnableConfigurationProperties({RedissonProperties.class, DataRedisProperties.class})
 public class RedissonAutoConfiguration {
 
     @Autowired(required = false)
@@ -77,7 +77,7 @@ public class RedissonAutoConfiguration {
     private RedissonProperties redissonProperties;
 
     @Autowired
-    private RedisProperties redisProperties;
+    private DataRedisProperties redisProperties;
 
     @Autowired
     private ApplicationContext ctx;
@@ -120,7 +120,7 @@ public class RedissonAutoConfiguration {
 
     private boolean hasConnectionDetails() {
         try {
-            Class.forName("org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails");
+            Class.forName("org.springframework.boot.data.redis.autoconfigure.DataRedisConnectionDetails");
             return true;
         } catch (ClassNotFoundException e) {
             return false;
@@ -132,11 +132,11 @@ public class RedissonAutoConfiguration {
     @ConditionalOnMissingBean(RedissonClient.class)
     public RedissonClient redisson() throws IOException {
         Config config;
-        Method clusterMethod = ReflectionUtils.findMethod(RedisProperties.class, "getCluster");
-        Method usernameMethod = ReflectionUtils.findMethod(RedisProperties.class, "getUsername");
-        Method timeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getTimeout");
-        Method connectTimeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getConnectTimeout");
-        Method clientNameMethod = ReflectionUtils.findMethod(RedisProperties.class, "getClientName");
+        Method clusterMethod = ReflectionUtils.findMethod(DataRedisProperties.class, "getCluster");
+        Method usernameMethod = ReflectionUtils.findMethod(DataRedisProperties.class, "getUsername");
+        Method timeoutMethod = ReflectionUtils.findMethod(DataRedisProperties.class, "getTimeout");
+        Method connectTimeoutMethod = ReflectionUtils.findMethod(DataRedisProperties.class, "getConnectTimeout");
+        Method clientNameMethod = ReflectionUtils.findMethod(DataRedisProperties.class, "getClientName");
 
         Object timeoutValue = ReflectionUtils.invokeMethod(timeoutMethod, redisProperties);
         String prefix = getPrefix();
@@ -147,8 +147,8 @@ public class RedissonAutoConfiguration {
         boolean isSentinel = false;
         boolean isCluster = false;
         if (hasConnectionDetails()) {
-            ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
-            RedisConnectionDetails b = provider.getIfAvailable();
+            ObjectProvider<DataRedisConnectionDetails> provider = ctx.getBeanProvider(DataRedisConnectionDetails.class);
+            DataRedisConnectionDetails b = provider.getIfAvailable();
             if (b != null) {
                 password = b.getPassword();
                 username = b.getUsername();
@@ -232,8 +232,8 @@ public class RedissonAutoConfiguration {
             String sentinelUsername = null;
             String sentinelPassword = null;
             if (hasConnectionDetails()) {
-                ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
-                RedisConnectionDetails b = provider.getIfAvailable();
+                ObjectProvider<DataRedisConnectionDetails> provider = ctx.getBeanProvider(DataRedisConnectionDetails.class);
+                DataRedisConnectionDetails b = provider.getIfAvailable();
                 if (b != null && b.getSentinel() != null) {
                     database = b.getSentinel().getDatabase();
                     sentinelMaster = b.getSentinel().getMaster();
@@ -274,8 +274,8 @@ public class RedissonAutoConfiguration {
             }
 
             if (hasConnectionDetails()) {
-                ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
-                RedisConnectionDetails b = provider.getIfAvailable();
+                ObjectProvider<DataRedisConnectionDetails> provider = ctx.getBeanProvider(DataRedisConnectionDetails.class);
+                DataRedisConnectionDetails b = provider.getIfAvailable();
                 if (b != null && b.getCluster() != null) {
                     nodes = convertNodes(prefix, (List<Object>) (Object) b.getCluster().getNodes());
                 }
@@ -302,8 +302,8 @@ public class RedissonAutoConfiguration {
             String singleAddr = prefix + redisProperties.getHost() + ":" + redisProperties.getPort();
 
             if (hasConnectionDetails()) {
-                ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
-                RedisConnectionDetails b = provider.getIfAvailable();
+                ObjectProvider<DataRedisConnectionDetails> provider = ctx.getBeanProvider(DataRedisConnectionDetails.class);
+                DataRedisConnectionDetails b = provider.getIfAvailable();
                 if (b != null && b.getStandalone() != null) {
                     database = b.getStandalone().getDatabase();
                     singleAddr = prefix + b.getStandalone().getHost() + ":" + b.getStandalone().getPort();
@@ -331,12 +331,12 @@ public class RedissonAutoConfiguration {
     }
 
     private void initSSL(Config config) {
-        Method getSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "getSsl");
+        Method getSSLMethod = ReflectionUtils.findMethod(DataRedisProperties.class, "getSsl");
         if (getSSLMethod == null) {
             return;
         }
 
-        RedisProperties.Ssl ssl = redisProperties.getSsl();
+        DataRedisProperties.Ssl ssl = redisProperties.getSsl();
         if (ssl.getBundle() == null) {
             return;
         }
@@ -358,8 +358,8 @@ public class RedissonAutoConfiguration {
 
     private String getPrefix() {
         String prefix = RedisURI.REDIS_PROTOCOL;
-        Method isSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "isSsl");
-        Method getSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "getSsl");
+        Method isSSLMethod = ReflectionUtils.findMethod(DataRedisProperties.class, "isSsl");
+        Method getSSLMethod = ReflectionUtils.findMethod(DataRedisProperties.class, "getSsl");
         if (isSSLMethod != null) {
             if ((Boolean) ReflectionUtils.invokeMethod(isSSLMethod, redisProperties)) {
                 prefix = RedisURI.REDIS_SSL_PROTOCOL;

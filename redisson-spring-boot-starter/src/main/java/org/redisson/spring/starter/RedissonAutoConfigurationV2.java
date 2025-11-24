@@ -18,8 +18,8 @@ package org.redisson.spring.starter;
 import org.redisson.Redisson;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.data.redis.core.RedisOperations;
 
@@ -29,9 +29,9 @@ import org.springframework.data.redis.core.RedisOperations;
  * @author Nikita Koksharov
  *
  */
-@AutoConfiguration(before = RedisAutoConfiguration.class)
+@AutoConfiguration(before = DataRedisAutoConfiguration.class)
 @ConditionalOnClass({Redisson.class, RedisOperations.class})
-@EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
+@EnableConfigurationProperties({RedissonProperties.class, DataRedisProperties.class})
 public class RedissonAutoConfigurationV2 extends RedissonAutoConfiguration {
 
 }
